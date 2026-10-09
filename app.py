@@ -34,7 +34,7 @@ def sanitize_text(text):
     return re.sub(r'[\u200e\u200f\u200b\u202a-\u202e\s]', '', str(text)).strip()
 
 # ==========================================
-# UI HTML TEMPLATE (Updated Options in Magic Merge)
+# UI HTML TEMPLATE (Updated Options in SRT File Merge)
 # ==========================================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -135,12 +135,19 @@ HTML_TEMPLATE = """
       </form>
     </div>
 
-    <!-- 4. SRT File Merge (Strict) Tab -->
+    <!-- 4. SRT File Merge (Strict) Tab - UPDATED with Toggle Mode -->
     <div id="tab-srtfile" class="tab-content hidden space-y-5">
       <form id="srtfileForm" class="space-y-5" onsubmit="submitForm(event, 'srtfileForm', '/api/srt_file_dub')">
         <div class="space-y-1.5">
-          <label class="block text-xs font-semibold text-slate-300">Google Gemini API Key</label>
-          <input type="password" name="apiKey" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-teal-500">
+          <label class="block text-xs font-semibold text-slate-300">Processing Mode ရွေးချယ်ရန်</label>
+          <select name="processMode" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-teal-500">
+            <option value="direct">Direct TTS (API မလိုပါ - မူရင်းစာသားအတိုင်း တိုက်ရိုက်ဖတ်မည်)</option>
+            <option value="ai">AI Summarize (API လိုအပ်သည် - အချိန်ကိုက်ချုံ့ပြီးမှ ဖတ်မည်)</option>
+          </select>
+        </div>
+        <div class="space-y-1.5">
+          <label class="block text-xs font-semibold text-slate-300">Google Gemini API Key (AI Summarize ရွေးမှသာ ထည့်ပါ)</label>
+          <input type="password" name="apiKey" placeholder="AIzaSy... (Direct TTS အတွက် ထည့်ရန်မလိုပါ)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-teal-500">
         </div>
         <div class="space-y-1.5">
           <label class="block text-xs font-semibold text-slate-300">Video File</label>
@@ -161,7 +168,7 @@ HTML_TEMPLATE = """
       </form>
     </div>
 
-    <!-- 5. Magic Merge (Copyright Bypass) Tab - UPDATED -->
+    <!-- 5. Magic Merge (Copyright Bypass) Tab -->
     <div id="tab-magic" class="tab-content hidden space-y-5">
       <div class="bg-orange-500/10 border border-orange-500/20 p-3 rounded-xl text-xs text-orange-300">
         <i class="fa-solid fa-mask mr-1"></i> ဖြတ်ထားသော ဗီဒီယိုများကို အောက်ပါ Option များ ရွေးချယ်၍ ပြန်လည်ဆက်ပေးပါမည်။
@@ -172,15 +179,23 @@ HTML_TEMPLATE = """
           <input type="file" name="videos" accept="video/*" multiple required class="w-full text-xs bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2">
         </div>
 
-        <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-2 text-xs text-slate-300 font-semibold">
+        <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-4 text-xs text-slate-300 font-semibold">
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" name="useMirror" value="true" class="accent-orange-500 w-4 h-4">
             <span>🪞 Mirror လုပ်မည် (ဘယ်ညာပြောင်းရန်)</span>
           </label>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" name="useColor" value="true" class="accent-orange-500 w-4 h-4">
-            <span>🎨 Color Change လုပ်မည် (အရောင် ၃ မျိုး အလှည့်ကျပြောင်းရန်)</span>
-          </label>
+          
+          <div class="space-y-1.5 pt-3 border-t border-slate-800">
+            <label class="block text-xs font-semibold text-slate-300 mb-1">
+              <i class="fa-solid fa-palette text-yellow-400 mr-1"></i> အရောင် (Color Filter) ရွေးရန်
+            </label>
+            <select name="colorFilter" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-orange-500">
+              <option value="original">မူရင်းအရောင် (မပြောင်းပါ)</option>
+              <option value="cinematic">Cinematic (ရုပ်ရှင်ဆန်ဆန် Contrast တင်မည်)</option>
+              <option value="warm">Warm Tone (အဝါ/အနွေးရောင်ဘက် သွားမည်)</option>
+              <option value="cool">Cool Tone (အပြာ/အေးမြသောအရောင်ဘက် သွားမည်)</option>
+            </select>
+          </div>
         </div>
 
         <button type="submit" class="submit-btn w-full bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold py-3 rounded-xl shadow-lg transition">🎭 Copyright Bypass ဖြင့် ပေါင်းရန်</button>
@@ -279,7 +294,7 @@ def generate_srt_with_gemini_audio(client, audio_path, multi_voice=False, strict
             prompt += "\n5. MULTI-SPEAKER TAG: Identify speaker gender. Prefix Burmese translation with [M] for male, or [F] for female.\n"
 
     try:
-        response = client.models.generate_content(model="gemini-3.8-flash", contents=[uploaded_audio, prompt])
+        response = client.models.generate_content(model="gemini-1.5-flash", contents=[uploaded_audio, prompt])
         try: client.files.delete(name=uploaded_audio.name)
         except: pass
         raw_text = re.sub(r'[\u200e\u200f\u200b\u202a-\u202e]', '', str(response.text)).strip()
@@ -300,7 +315,7 @@ def summarize_srt_text_with_gemini(client, srt_content):
     SRT Content:
     """ + srt_content
     try:
-        response = client.models.generate_content(model="gemini-3.8-flash", contents=[prompt])
+        response = client.models.generate_content(model="gemini-1.5-flash", contents=[prompt])
         raw_text = re.sub(r'[\u200e\u200f\u200b\u202a-\u202e]', '', str(response.text)).strip()
         return re.sub(r'```(?:srt)?\n?', '', raw_text).strip('` \n')
     except Exception as e:
@@ -487,15 +502,22 @@ def process_srt_strict():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
-# ---------- Route 4: SRT File Dubbing (Strict) ----------
+# ---------- Route 4: SRT File Dubbing (Strict with Option) ----------
 @app.route('/api/srt_file_dub', methods=['POST'])
 def process_srt_file_dub():
     try:
         api_key = sanitize_text(request.form.get('apiKey', ''))
         voice = request.form.get('voice', 'my-MM-NilarNeural')
+        process_mode = request.form.get('processMode', 'direct') # 'direct' or 'ai'
         video_file = request.files.get('video')
         srt_file = request.files.get('srt_file')
-        if not api_key or not video_file or not srt_file: return jsonify({"success": False, "message": "အချက်အလက်များ မစုံလင်ပါ။"}), 400
+        
+        if not video_file or not srt_file: 
+            return jsonify({"success": False, "message": "ဗီဒီယို သို့မဟုတ် SRT ဖိုင် မပါဝင်ပါ။"}), 400
+
+        # AI Mode ကို ရွေးထားပြီး API Key မထည့်ထားရင် Error ပြမည်
+        if process_mode == 'ai' and not api_key:
+            return jsonify({"success": False, "message": "AI Summarize သုံးရန်အတွက် API Key ထည့်ပေးရန် လိုအပ်ပါသည်။"}), 400
 
         unique_id = str(uuid.uuid4())[:8]
         _, ext = os.path.splitext(video_file.filename)
@@ -503,10 +525,15 @@ def process_srt_file_dub():
         video_file.save(video_path)
 
         srt_content_raw = srt_file.read().decode('utf-8-sig')
-        client = genai.Client(api_key=api_key)
-        summarized_srt_content = summarize_srt_text_with_gemini(client, srt_content_raw)
+        
+        # Mode ပေါ်မူတည်၍ AI ဖြင့် ချုံ့မည် (သို့) မူရင်းအတိုင်း တိုက်ရိုက်သုံးမည်
+        if process_mode == 'ai':
+            client = genai.Client(api_key=api_key)
+            final_srt_content = summarize_srt_text_with_gemini(client, srt_content_raw)
+        else:
+            final_srt_content = srt_content_raw
 
-        subtitles = list(srt.parse(summarized_srt_content))
+        subtitles = list(srt.parse(final_srt_content))
         video_info = AudioSegment.from_file(video_path)
         final_audio = AudioSegment.silent(duration=len(video_info))
 
@@ -544,13 +571,13 @@ def process_srt_file_dub():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
-# ---------- Route 5: Magic Merge (UPDATED for Optional Checkboxes) ----------
+# ---------- Route 5: Magic Merge ----------
 @app.route('/api/magic_merge', methods=['POST'])
 def process_magic_merge():
     try:
         videos = request.files.getlist('videos')
         use_mirror = request.form.get('useMirror') == 'true'
-        use_color = request.form.get('useColor') == 'true'
+        color_filter = request.form.get('colorFilter', 'original')
 
         if not videos or len(videos) == 0:
             return jsonify({"success": False, "message": "ဗီဒီယိုများ ရွေးချယ်ထားခြင်း မရှိပါ။"}), 400
@@ -558,12 +585,6 @@ def process_magic_merge():
         unique_id = str(uuid.uuid4())[:8]
         process_dir = os.path.join(UPLOAD_FOLDER, f"magic_{unique_id}")
         os.makedirs(process_dir, exist_ok=True)
-        
-        color_filters = [
-            "eq=contrast=1.05:brightness=0.02:saturation=1.1",
-            "eq=contrast=1.1:brightness=-0.02:saturation=1.2",
-            "eq=contrast=1.08:brightness=0.01:saturation=1.05"
-        ]
         
         processed_files = []
         for i, video_file in enumerate(videos):
@@ -574,12 +595,16 @@ def process_magic_merge():
             
             output_part_path = os.path.join(process_dir, f"out_{i}.mp4")
             
-            # Checkbox အပေါ်မူတည်ပြီး Filters သတ်မှတ်ခြင်း
             filters = []
             if use_mirror:
                 filters.append("hflip")
-            if use_color:
-                filters.append(color_filters[i % 3])
+            
+            if color_filter == 'cinematic':
+                filters.append("eq=contrast=1.15:brightness=-0.02:saturation=1.1")
+            elif color_filter == 'warm':
+                filters.append("colorbalance=rm=0.1:bm=-0.1")
+            elif color_filter == 'cool':
+                filters.append("colorbalance=rm=-0.1:bm=0.1")
                 
             filter_str = ",".join(filters)
             
@@ -588,7 +613,6 @@ def process_magic_merge():
                 subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 processed_files.append(f"file '{output_part_path}'")
             else:
-                # ဘာ Option မှ မရွေးထားရင် Input အတိုင်း တိုက်ရိုက် ပေါင်းမည်
                 processed_files.append(f"file '{input_path}'")
         
         if not processed_files: return jsonify({"success": False, "message": "Video ဖိုင်များ မှားယွင်းနေသည်။"}), 400
