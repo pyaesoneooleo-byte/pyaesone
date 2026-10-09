@@ -106,7 +106,7 @@ HTML_TEMPLATE = """
           <select name="duration" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white">
             <option value="5">၅ မိနစ်စီ</option>
             <option value="10">၁၀ မိနစ်စီ</option>
-            <option value="15">၁၅ မိနစ်စီ</option>
+            <option value="15">၁5 မိနစ်စီ</option>
           </select>
         </div>
         <button type="submit" class="submit-btn w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-3 rounded-xl shadow-lg transition">✂️ ဗီဒီယို ဖြတ်တောက်ရန်</button>
@@ -294,7 +294,7 @@ def generate_srt_with_gemini_audio(client, audio_path, multi_voice=False, strict
             prompt += "\n5. MULTI-SPEAKER TAG: Identify speaker gender. Prefix Burmese translation with [M] for male, or [F] for female.\n"
 
     try:
-        response = client.models.generate_content(model="gemini-1.5-flash", contents=[uploaded_audio, prompt])
+        response = client.models.generate_content(model="gemini-3.8-flash", contents=[uploaded_audio, prompt])
         try: client.files.delete(name=uploaded_audio.name)
         except: pass
         raw_text = re.sub(r'[\u200e\u200f\u200b\u202a-\u202e]', '', str(response.text)).strip()
@@ -315,7 +315,7 @@ def summarize_srt_text_with_gemini(client, srt_content):
     SRT Content:
     """ + srt_content
     try:
-        response = client.models.generate_content(model="gemini-1.5-flash", contents=[prompt])
+        response = client.models.generate_content(model="gemini-3.8-flash", contents=[prompt])
         raw_text = re.sub(r'[\u200e\u200f\u200b\u202a-\u202e]', '', str(response.text)).strip()
         return re.sub(r'```(?:srt)?\n?', '', raw_text).strip('` \n')
     except Exception as e:
